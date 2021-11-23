@@ -1,3 +1,19 @@
+# HEDGES refactoring 
+
+
+## TODO : numpy dev install in novel machine : bionic-3.9
+docker run -it  -v /home/dgerin/work/dpu_dnastorage/hedges:/work bionic-latest-3.9 bash
+
+build, install, run ctest without cache
+
+```
+make testinstall
+```
+build, install, run ctest with cached ./build ./install
+```
+make isntall
+```
+
 # HEDGES
 
 A package for encoding and decoding arbitrary byte data to and from strands of DNA using a robust an error-correcting code (ECC).

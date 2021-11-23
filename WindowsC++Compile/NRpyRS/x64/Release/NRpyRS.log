@@ -1,8 +1,0 @@
-﻿  NRpyRS.cpp
-D:\Anaconda2\Lib\site-packages\numpy\core\include\numpy\npy_1_7_deprecated_api.h(12): warning Msg: Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-     Creating library D:\Dropbox\Projects\DNAcode\CodeAsPublished\WindowsC++Compile\x64\Release\NRpyRS.lib and object D:\Dropbox\Projects\DNAcode\CodeAsPublished\WindowsC++Compile\x64\Release\NRpyRS.exp
-  Generating code
-  Previous IPDB not found, fall back to full compilation.
-  All 515 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
-  Finished generating code
-  NRpyRS.vcxproj -> D:\Dropbox\Projects\DNAcode\CodeAsPublished\WindowsC++Compile\x64\Release\NRpyRS.pyd

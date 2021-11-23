@@ -1,2 +1,69 @@
+build/
+install/
 
-WindowsC++Compile/.vs/NRpyDNAcode/v16/.suo
+# python setuptools
+*.egg-info/
+
+
+# Vi
+*.swp
+
+# Vscode
+.vscode/
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Spec (texlive latex)
+
+*.toc
+*.aux
+*.pdf
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Merge cnn-dev-master legacy
+*.gz
+*.db
+*.pyc
+*.bin
+*.data
+*.nnw
+*.ods
+*.index
+*.data-00000-of-00001
+*.zip
+*.gcov
+*.gcno

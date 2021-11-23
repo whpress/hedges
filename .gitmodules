@@ -1,0 +1,6 @@
+[submodule "cmake-fullpython"]
+	path = cmake-fullpython
+	url = https://github.com/dgerin/cmake-fullpython
+[submodule "dhub"]
+	path = dhub
+	url = https://github.com/dgerin/dhub
