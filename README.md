@@ -6,12 +6,14 @@ mainly bu using Docker image bionic-2.7-numpy that cotains a clean installation
 of the different dependencies.
 
 ## clone 
-
+```
 git clone -b SW-20-master https://github.com/upmem/hedges/ && git submodule update --init --recursive
-
+```
 ## build bionic-2.7-numpy image
 
+```
 docker build -t bionic-2.7-numpy  dhub/bionic/python2.7-numpy/ 
+```
 
 ## bionic-2.7-numpy
 
