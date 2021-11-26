@@ -1,18 +1,18 @@
 # HEDGES refactoring 
 
 
-## TODO : numpy dev install in novel machine : bionic-3.9
-docker run -it  -v /home/dgerin/work/dpu_dnastorage/hedges:/work bionic-latest-3.9 bash
+## TODO : numpy dev install in novel machine : bionic-2.7-numpy
 
-build, install, run ctest without cache
+test docker environnement, compilation and runtime with simple test
+```
+make test_docker
+```
 
+build and run test_programm
 ```
-make testinstall
+make build && make hedges_testprogramm
 ```
-build, install, run ctest with cached ./build ./install
-```
-make isntall
-```
+
 
 # HEDGES
 
