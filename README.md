@@ -1,4 +1,4 @@
-# HEDGES refactoring 
+#  [refactoring] HEDGES 
 
 
 ## TODO : numpy dev install in novel machine : bionic-2.7-numpy
