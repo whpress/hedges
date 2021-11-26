@@ -14,7 +14,7 @@ make build && make hedges_testprogramm
 ```
 
 
-# HEDGES
+# [legacy] HEDGES
 
 A package for encoding and decoding arbitrary byte data to and from strands of DNA using a robust an error-correcting code (ECC).
 
