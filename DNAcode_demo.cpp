@@ -20,7 +20,15 @@ decode the DNA and compare.
 #include "testprograms.h"
 
 int main() {
-	//main_test_RS(); // tests only the Reed-Solomon (sanity check)
-	main_test_all(); // tests DNAcode (includes Reed-Solomon)
+	try {
+		//main_test_RS(); // tests only the Reed-Solomon (sanity check)
+		main_test_all(); // tests DNAcode (includes Reed-Solomon)
+		return 0;
+	}
+	// simple error handling (see nr3b.h and change as desired) :
+	catch (const exception& e) { 
+		cerr << e.what() << std::endl;
+		return 1;
+	}
 }
 

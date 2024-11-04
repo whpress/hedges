@@ -269,7 +269,7 @@ Int vbitlen(Int nmb) {  // how long is message in vbits?  (patarr must already b
 	Int ksize, nn=0;
 	for (ksize=0;;ksize++) {  // how many Mbits do we need?
 		if (nn >= nmb) break;
-		if (ksize >= MAXSEQ) throw("vbitlen: MAXSEQ too small");
+		if (ksize >= MAXSEQ) THROW("vbitlen: MAXSEQ too small");
 		nn += pattarr[ksize];
 	}
 	return ksize;
@@ -323,7 +323,7 @@ void setcoderate_C(Int pattnumber, const char* leftpr, const char* rightpr) { //
 
 void setcoderate(Int pattnumber, char* leftpr, char* rightpr) {
 	if (pattnumber < 1 || pattnumber > 6) {
-		throw("setcoderate arg must be in range 1 to 6");
+		THROW("setcoderate arg must be in range 1 to 6");
 	}
 	setcoderate_C(pattnumber, leftpr, rightpr);
 	lastpattnumber = pattnumber;
@@ -349,7 +349,7 @@ VecMbit unpackvbits(const char *message, Int n, Int len) {
 VecUchar packvbits(VecMbit &vbits, Int nmessbits) {
 	Int i,j,k,k1, ksize = vbits.size(), nn=0;
 	Uchar bit;
-	if (ksize > MAXSEQ) throw("packvbits: MAXSEQ too small");
+	if (ksize > MAXSEQ) THROW("packvbits: MAXSEQ too small");
 	for (k = 0; k < ksize; k++) nn += pattarr[k]; // number of bits
 	nn = MIN(nn, nmessbits); // no more than the specified number of bits
 	nn = (nn + 7) / 8; // number of bytes
@@ -380,7 +380,7 @@ GF4word encode_C(const char *message, Int n, Int len=0) { //dnac
 	Int regout;
 	GF4word vbits = unpackvbits(message, n, len);
 	Int k=0, nbits, mod, nm = vbits.size(); // number of variable bits encoded
-	if (nm > MAXSEQ) throw("encode: MAXSEQ too small");
+	if (nm > MAXSEQ) THROW("encode: MAXSEQ too small");
 	GF4word codetext(nm + RPRIMER);
 	Mbit messagebit;
 	Ullong prevbits = 0, salt = 0, newsalt = 0; 
@@ -454,7 +454,7 @@ struct Hypothesis {
 		predi = pred;
 		messagebit = mbit; // variable number
 		seq = hp->seq + 1;
-		if (seq > MAXSEQ) throw("init_from_predecessor: MAXSEQ too small");
+		if (seq > MAXSEQ) THROW("init_from_predecessor: MAXSEQ too small");
 		Int nbits = pattarr[seq];
 		prevbits = hp->prevbits;
 		salt = hp->salt;
@@ -538,7 +538,7 @@ void shoveltheheap(Int limit, Int nmessbits) {
 		currscore = heap.pop(qq);
 		hp = &hypostack[qq];
 		seq = hp->seq;
-		if (seq > MAXSEQ) throw("shoveltheheap: MAXSEQ too small");
+		if (seq > MAXSEQ) THROW("shoveltheheap: MAXSEQ too small");
 		nguess = 1 << pattarr[seq + 1]; // i.e., 1, 2, or 4
 		if (hp->offset > ofmax) { // keep track of farthest gotten to
 			ofmax = hp->offset;
@@ -555,7 +555,7 @@ void shoveltheheap(Int limit, Int nmessbits) {
 		if (nhypo + 12 >= nnstak) {
 			nnstak *= 2;
 			hypostack.resize(nnstak, true);
-			if (hypostack.size() != nnstak) throw("resize of hypostack failed");
+			if (hypostack.size() != nnstak) THROW("resize of hypostack failed");
 		}
 		for (mbit = 0; mbit < nguess; mbit++) {
 			if (hypostack[nhypo].init_from_predecessor(qq, mbit, 0)) { // substitution

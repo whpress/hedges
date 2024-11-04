@@ -16,7 +16,7 @@ union b8 {
 	b8() {}
 	b8(int64_t ww) { w = ww; }
 	b8(const VecUchar &vec) {
-		if (vec.size() != 8) throw("bad conversion of VecUchar to b8");
+		if (vec.size() != 8) THROW("bad conversion of VecUchar to b8");
 		for (int i = 0; i < 8; i++) b[i] = vec[i];
 	}
 	inline bool operator==(const b8 &b) { return w == b.w; }
@@ -60,7 +60,7 @@ struct SchifraCode { // see Schifra's example08
 			generator_polynomial_root_count,
 			*generator_polynomial)
 			) {
-			throw("Error - Failed to create sequential root generator!");
+			THROW("Error - Failed to create sequential root generator!");
 		}
 		encoder = new encoder_t(*field, *generator_polynomial);
 		decoder = new decoder_t(*field, generator_polynomial_index);

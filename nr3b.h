@@ -25,11 +25,13 @@
 #include <time.h>
 #include <fcntl.h>
 #include <string.h>
+#include <string>
 #include <ctype.h>
 #include <stdarg.h>
 #include <typeinfo>
 #include <float.h>
 #include <cstdint>
+#include <exception>
 #include <thread>  // for sleep()
 #include <chrono>  // for sleep()
 
@@ -77,32 +79,19 @@ inline void SWAP(T &a, T &b)
 
 // exception handling
 
-#ifndef _USENRERRORCLASS_
-#define throw(message) \
-{printf("ERROR: %s\n     in file %s at line %d\n", message,__FILE__,__LINE__); throw(1);}
-#else
-struct NRerror {
-	char *message;
-	char *file;
-	int line;
-	NRerror(char *m, char *f, int l) : message(m), file(f), line(l) {}
+class THROWexception : public exception {
+	string message;
+public:
+	THROWexception(const string& msg, const char* file, int line) {
+		message = msg + " in file " + file + " at line " + to_string(line);
+	}
+	const char* what() const noexcept override {
+		return message.c_str();
+	}
 };
-#define throw(message) throw(NRerror(message,__FILE__,__LINE__));
-void NRcatch(NRerror err) {
-	printf("ERROR: %s\n     in file %s at line %d\n",
-		err.message, err.file, err.line);
-	exit(1);
-}
-#endif
-
-// usage example:
-//
-//	try {
-//		somebadroutine();
-//	}
-//	catch(NRerror s) {NRcatch(s);}
-//
-// (You can of course substitute any other catch body for NRcatch(s).)
+#define THROW(msg) throw THROWexception(msg, __FILE__, __LINE__)
+// redefine the above if you want different error handling
+// DNAcode and RSecc call THROW(const char *msg) on all errors
 
 // clock
 class NRclock {
@@ -238,7 +227,7 @@ template <class T>
 inline T & NRvector<T>::operator[](const int i)	{ //subscripting 
 #ifdef _CHECKBOUNDS_
 if (i<0 || i>=nn) {
-	throw("NRvector subscript out of bounds");
+	THROW("NRvector subscript out of bounds");
 }
 #endif
 	return v[i];
@@ -248,7 +237,7 @@ template <class T>
 inline const T & NRvector<T>::operator[](const int i) const	{ //subscripting
 #ifdef _CHECKBOUNDS_
 if (i<0 || i>=nn) {
-	throw("NRvector subscript out of bounds");
+	THROW("NRvector subscript out of bounds");
 }
 #endif
 	return v[i];
@@ -430,7 +419,7 @@ NRvector<T> NRvector<T>::gather(const NRvector<int> &locs) const {
 template <class T> template <class U>
 NRvector<T>& NRvector<T>::scatter(const NRvector<int> &locs, const NRvector<U> &vals){
 	int i, n = locs.size();
-	if (vals.size() != n) throw("arguments in set must be same length");
+	if (vals.size() != n) THROW("arguments in set must be same length");
 	for (i=0;i<n;i++) operator[](locs[i]) = T(vals[i]); // so that range checking is done if enabled
 	return *this;
 }
@@ -484,7 +473,7 @@ NRvectorview<T>::NRvectorview(const NRvectorview<T> &rhs) { // make shallow copy
 template <class T>
 NRvectorview<T> & NRvectorview<T>::operator=(const NRvectorview<T> &rhs) {
 	if (this != &rhs) {
-		if (nn != rhs.nn) throw("incompatible sizes in slice assignment");
+		if (nn != rhs.nn) THROW("incompatible sizes in slice assignment");
 		for (int i=0; i<nn; i++) v[i]=rhs[i];
 	}
 	return *this;
@@ -492,7 +481,7 @@ NRvectorview<T> & NRvectorview<T>::operator=(const NRvectorview<T> &rhs) {
 
 template <class T>
 NRvectorview<T> & NRvectorview<T>::operator=(const NRvector<T> &rhs) {
-	if (nn != rhs.nn) throw("incompatible sizes in slice assignment");
+	if (nn != rhs.nn) THROW("incompatible sizes in slice assignment");
 	for (int i=0; i<nn; i++) v[i]=rhs[i];
 	return *this;
 }
@@ -681,7 +670,7 @@ inline T* NRmatrix<T>::operator[](const int i)	//subscripting: pointer to row i
 {
 #ifdef _CHECKBOUNDS_
 if (i<0 || i>=nn) {
-	throw("NRmatrix subscript out of bounds");
+	THROW("NRmatrix subscript out of bounds");
 }
 #endif
 	return v[i];
@@ -692,7 +681,7 @@ inline const T* NRmatrix<T>::operator[](const int i) const
 {
 #ifdef _CHECKBOUNDS_
 if (i<0 || i>=nn) {
-	throw("NRmatrix subscript out of bounds");
+	THROW("NRmatrix subscript out of bounds");
 }
 #endif
 	return v[i];
@@ -798,14 +787,14 @@ inline T NRmatrix<T>::maxval() const {
 
 template <class T>
 const NRvector<T> NRmatrix<T>::row(int irow) const {
-	if (irow < 0 || irow > nn-1) throw("impossible row index in NRmatrix::row");
+	if (irow < 0 || irow > nn-1) THROW("impossible row index in NRmatrix::row");
 	return NRvector<T>(mm,&v[irow][0]); // copies row of data
 }
 
 
 template <class T>
 NRvectorview<T> NRmatrix<T>::row(int irow) {
-	if (irow < 0 || irow > nn-1) throw("impossible row index in NRmatrix::row");
+	if (irow < 0 || irow > nn-1) THROW("impossible row index in NRmatrix::row");
 	NRvectorview<T> ans;
 	ans.nn = mm;
 	ans.v = &v[irow][0];
@@ -814,7 +803,7 @@ NRvectorview<T> NRmatrix<T>::row(int irow) {
 
 template <class T>
 NRvector<T> NRmatrix<T>::col(int jcol) const {
-	if (jcol < 0 || jcol > mm-1) throw("impossible col index in NRmatrix::col");
+	if (jcol < 0 || jcol > mm-1) THROW("impossible col index in NRmatrix::col");
 	NRvector<T> ans(nn);
 	for (int i=0;i<nn;i++) ans[i] = v[i][jcol];
 	return ans;
@@ -823,7 +812,7 @@ NRvector<T> NRmatrix<T>::col(int jcol) const {
 template <class T>
 NRvector<T> NRmatrix<T>::diag(int jd) const {
 	int i, ii;
-	if (jd >= mm || -jd >= nn) throw("impossible diag index in NRmatrix::diag");
+	if (jd >= mm || -jd >= nn) THROW("impossible diag index in NRmatrix::diag");
 	ii = (jd > 0 ? MAX(0,MIN(mm-jd,nn)) : MAX(0,MIN(mm,nn+jd)));
 	NRvector<T> ans(ii);
 	if (jd > 0) for (i=0;i<ii;i++) ans[i] = v[i][i+jd];
@@ -833,16 +822,16 @@ NRvector<T> NRmatrix<T>::diag(int jd) const {
 
 template <class T>
 NRmatrix<T>&  NRmatrix<T>::setrow(int irow, const NRvector<T> &row) {
-	if (irow < 0 || irow > nn-1) throw("impossible row index in setrow");
-	if (row.size() != mm) throw("size mismatch in setrow");
+	if (irow < 0 || irow > nn-1) THROW("impossible row index in setrow");
+	if (row.size() != mm) THROW("size mismatch in setrow");
 	for (int j=0;j<mm;j++) v[irow][j] = row[j]; 
 	return *this;
 }
 
 template <class T>
 NRmatrix<T>&  NRmatrix<T>::setcol(int jcol, const NRvector<T> &col) {
-	if (jcol < 0 || jcol > mm-1) throw("impossible col index in setcol");
-	if (col.size() != nn) throw("size mismatch in setcol");
+	if (jcol < 0 || jcol > mm-1) THROW("impossible col index in setcol");
+	if (col.size() != nn) THROW("size mismatch in setcol");
 	for (int i=0;i<nn;i++) v[i][jcol] = col[i];
 	return *this;
 }
@@ -850,9 +839,9 @@ NRmatrix<T>&  NRmatrix<T>::setcol(int jcol, const NRvector<T> &col) {
 template <class T>
 NRmatrix<T>&  NRmatrix<T>::setdiag(int jd, const NRvector<T> &diag) {
 	int i, ii;
-	if (jd >= mm || -jd >= nn) throw("impossible diag index in NRmatrix::setdiag");
+	if (jd >= mm || -jd >= nn) THROW("impossible diag index in NRmatrix::setdiag");
 	ii = (jd > 0 ? MAX(0,MIN(mm-jd,nn)) : MAX(0,MIN(mm,nn+jd)));
-	if (ii != diag.size()) throw("size mismatch in setdiag");
+	if (ii != diag.size()) THROW("size mismatch in setdiag");
 	if (jd > 0) for (i=0;i<ii;i++) v[i][i+jd] = diag[i];
 	else for (i=0;i<ii;i++) v[i-jd][i] = diag[i];
 	return *this;
@@ -887,7 +876,7 @@ NRmatrix<T> NRmatrix<T>::gathercols(NRvector<int> locs) {
 	NRmatrix<T> ans(nn,ml);
 	for (jl=0;jl<ml;jl++) {
 		jcol = locs[jl];
-		if (jcol < 0 || jcol > mm-1) throw("impossible col index in NRmatrix::getcols");
+		if (jcol < 0 || jcol > mm-1) THROW("impossible col index in NRmatrix::getcols");
 		for (i=0;i<nn;i++) ans[i][jl] = v[i][jcol];
 	}
 	return ans;
@@ -916,14 +905,14 @@ NRvector<T> NRmatrix<T>::gather(const NRmatrix<int> &locs) const {
 template <class T> template <class U>
 NRmatrix<T> & NRmatrix<T>::scatter(const NRmatrix<int> &locs, const NRvector<U> &vals) {
 	int i, n = locs.nrows();
-	if (vals.size() != n) throw("arguments in set must be same length");
+	if (vals.size() != n) THROW("arguments in set must be same length");
 	for (i=0;i<n;i++) (operator[](locs[i][0]))[locs[i][1]] = T(vals[i]); // so that range checking is done if enabled
 	return *this;
 }
 template <class T> template <class U>
 NRmatrix<T> & NRmatrix<T>::scatter(const NRmatrix<int> &locs, const U vals){
 	int i, n = locs.nrows();
-	if (vals.size() != n) throw("arguments in set must be same length");
+	if (vals.size() != n) THROW("arguments in set must be same length");
 	for (i=0;i<n;i++) (operator[](locs[i][0]))[locs[i][1]] = T(vals); // so that range checking is done if enabled
 	return *this;
 }
@@ -956,7 +945,7 @@ NRvector<T> NRmatrix<T>::sum(int dim) const {
 			ans[i] = tmp;
 		}
 		return ans;
-	} else throw("bad value of dim in matrix sum");
+	} else THROW("bad value of dim in matrix sum");
 }
 
 template <class T>
@@ -1020,7 +1009,7 @@ NRmatrix<T> NRmatrix<T>::flipud() const {
 template <class T>
 NRmatrix<T> NRmatrix<T>::hcat(const NRmatrix<T> &b) {
 	int i,j,mb=b.ncols();
-	if (nn != b.nrows()) throw("incompatible shapes in hcat");
+	if (nn != b.nrows()) THROW("incompatible shapes in hcat");
 	NRmatrix<T> ans(nn,mm+mb);
 	for (i=0;i<nn;i++) for (j=0;j<mm;j++) ans[i][j] = v[i][j];
 	for (i=0;i<nn;i++) for (j=0;j<mb;j++) ans[i][j+mm] = b[i][j];
@@ -1030,7 +1019,7 @@ NRmatrix<T> NRmatrix<T>::hcat(const NRmatrix<T> &b) {
 template <class T>
 NRmatrix<T> NRmatrix<T>::vcat(const NRmatrix<T> &b) {
 	int i,j, nb=b.nrows();
-	if (mm != b.ncols()) throw("incompatible shapes in vcat");
+	if (mm != b.ncols()) THROW("incompatible shapes in vcat");
 	NRmatrix<T> ans(nn+nb,mm);
 	for (i=0;i<nn;i++) for (j=0;j<mm;j++) ans[i][j] = v[i][j];
 	for (i=0;i<nb;i++) for (j=0;j<mm;j++) ans[i+nn][j] = b[i][j];
@@ -1088,7 +1077,7 @@ template <class T>
 NRmatrixview<T> & NRmatrixview<T>::operator=(const NRmatrixview<T> &rhs) {
 	if (this != &rhs) {
 		int i,j;
-		if (nn != rhs.nn || mm != rhs.mm) throw("incompatible sizes in slice assignment");
+		if (nn != rhs.nn || mm != rhs.mm) THROW("incompatible sizes in slice assignment");
 		for (i=0;i<nn;i++) for (j=0;j<mm;j++) v[i][j]=rhs[i][j];
 	}
 	return *this;
@@ -1097,7 +1086,7 @@ NRmatrixview<T> & NRmatrixview<T>::operator=(const NRmatrixview<T> &rhs) {
 template <class T>
 NRmatrixview<T> & NRmatrixview<T>::operator=(const NRmatrix<T> &rhs) {
 	int i,j;
-	if (nn != rhs.nn || mm != rhs.mm) throw("incompatible sizes in slice assignment");
+	if (nn != rhs.nn || mm != rhs.mm) THROW("incompatible sizes in slice assignment");
 	for (i=0;i<nn;i++) for (j=0;j<mm;j++) v[i][j]=rhs[i][j];
 	return *this;
 }
@@ -1375,7 +1364,7 @@ NRvector<T> matmul(NRmatrix<T> &a, NRvector<T> &b) {
 	// matrix vector multiplication
 	int i,k,m=a.nrows(), p=a.ncols();
 	T sum;
-	if (p != b.size()) throw("incompatible sizes in mat*vec matmul");
+	if (p != b.size()) THROW("incompatible sizes in mat*vec matmul");
 	NRvector<T> ans(m);
 	for (i=0;i<m;i++) {
 		sum = T(0);
@@ -1390,7 +1379,7 @@ NRvector<T> matmul(NRmatrix<T> &a, char *transpose, NRvector<T> &b) {
 	// matrix^T vector multiplication
 	int i,k,m=a.ncols(), p=a.nrows();
 	T sum;
-	if (p != b.size()) throw("incompatible sizes in mat^T * vec matmul");
+	if (p != b.size()) THROW("incompatible sizes in mat^T * vec matmul");
 	NRvector<T> ans(m);
 	for (i=0;i<m;i++) {
 		sum = T(0);
@@ -1405,7 +1394,7 @@ NRvector<T> matmul(NRvector<T> &a, NRmatrix<T> &b) {
 	// vector matrix multiplication
 	int j,k, n=b.ncols(), p=b.nrows();
 	T sum;
-	if (p != a.size()) throw("incompatible sizes in vec*mat matmul");
+	if (p != a.size()) THROW("incompatible sizes in vec*mat matmul");
 	NRvector<T> ans(n);
 	for (j=0;j<n;j++) {
 		sum = T(0);
@@ -1420,7 +1409,7 @@ NRvector<T> matmul(NRvector<T> &a, NRmatrix<T> &b, char *transpose) {
 	// vector matrix^T multiplication
 	int j,k, n=b.nrows(), p=b.ncols();
 	T sum;
-	if (p != a.size()) throw("incompatible sizes in vec * mat^T matmul");
+	if (p != a.size()) THROW("incompatible sizes in vec * mat^T matmul");
 	NRvector<T> ans(n);
 	for (j=0;j<n;j++) {
 		sum = T(0);
@@ -1435,7 +1424,7 @@ NRmatrix<T> matmul(NRmatrix<T> &a, NRmatrix<T> &b) {
 	// matrix multiplication
 	int i,j,k,m=a.nrows(), n=b.ncols(), p=a.ncols();
 	T sum;
-	if (p != b.nrows()) throw("incompatible sizes in matmul 1");
+	if (p != b.nrows()) THROW("incompatible sizes in matmul 1");
 	NRmatrix<T> ans(m,n);
 	for (i=0;i<m;i++) for (j=0;j<n;j++) {
 		sum = T(0);
@@ -1450,7 +1439,7 @@ NRmatrix<T> matmul(NRmatrix<T> &a, char *transpose, NRmatrix<T> &b) {
 	// matrix multiplication a^T * b
 	int i,j,k,m=a.ncols(), n=b.ncols(), p=a.nrows();
 	T sum;
-	if (p != b.nrows()) throw("incompatible sizes in matmul 2");
+	if (p != b.nrows()) THROW("incompatible sizes in matmul 2");
 	NRmatrix<T> ans(m,n);
 	for (i=0;i<m;i++) for (j=0;j<n;j++) {
 		sum = T(0);
@@ -1465,7 +1454,7 @@ NRmatrix<T> matmul(NRmatrix<T> &a, NRmatrix<T> &b, char *transpose) {
 	// matrix multiplication a * b^T
 	int i,j,k,m=a.nrows(), n=b.nrows(), p=a.ncols();
 	T sum;
-	if (p != b.ncols()) throw("incompatible sizes in matmul 3");
+	if (p != b.ncols()) THROW("incompatible sizes in matmul 3");
 	NRmatrix<T> ans(m,n);
 	for (i=0;i<m;i++) for (j=0;j<n;j++) {
 		sum = T(0);
@@ -1480,7 +1469,7 @@ NRmatrix<T> matmul(NRmatrix<T> &a, char *t1, NRmatrix<T> &b, char *t2) {
 	// matrix multiplication
 	int i,j,k,m=a.ncols(), n=b.nrows(), p=a.nrows();
 	T sum;
-	if (p != b.ncols()) throw("incompatible sizes in matmul 4");
+	if (p != b.ncols()) THROW("incompatible sizes in matmul 4");
 	NRmatrix<T> ans(m,n);
 	for (i=0;i<m;i++) for (j=0;j<n;j++) {
 		sum = T(0);
@@ -1493,7 +1482,7 @@ NRmatrix<T> matmul(NRmatrix<T> &a, char *t1, NRmatrix<T> &b, char *t2) {
 template <class T>
 T dotproduct(const NRvector<T> &a, const NRvector<T> &b) {
 	int i, m=a.size();
-	if (m != b.size()) throw("incompatible sizes in dotproduct");
+	if (m != b.size()) THROW("incompatible sizes in dotproduct");
 	T sum = T(0);
 	for (i=0;i<m;i++) sum += a[i]*b[i];
 	return sum;
@@ -1512,7 +1501,7 @@ NRmatrix<T> outerproduct(const NRvector<T> &a, const NRvector<T> &b) {
 template <class T> \
 NRvector<T> & OPEQNAME (NRvector<T> &a, const NRvector<T> &b) { \
 	Int i, m = a.size(); \
-	if (m != b.size()) throw("incompatible sizes in vector op"); \
+	if (m != b.size()) THROW("incompatible sizes in vector op"); \
 	for (i=0; i<m; i++) a[i] OPEQ b[i]; \
 	return a; \
 } \
@@ -1531,7 +1520,7 @@ NRvector<T> OPNAME (const NRvector<T> &a, T s) \
 template <class T> \
 NRmatrix<T> & OPEQNAME (NRmatrix<T> &a, const NRmatrix<T> &b) { \
 	Int i,j, m = a.nrows(), n = a.ncols(); \
-	if (m != b.nrows() || n != b.ncols()) throw("incompatible sizes in matrix op"); \
+	if (m != b.nrows() || n != b.ncols()) THROW("incompatible sizes in matrix op"); \
 	for (i=0;i<m;i++) for (j=0;j<n;j++) a[i][j] OPEQ b[i][j]; \
 	return a; \
 } \
@@ -1611,7 +1600,7 @@ NewVecMatUnaryOp(operator~,~);
 template <class T> \
 NRvector<unsigned char> NAME(const NRvector<T> &a, const NRvector<T> &b) { \
 	Int i, m = a.size(); \
-	if (m != b.size()) throw("incompatible sizes in vector logical op"); \
+	if (m != b.size()) THROW("incompatible sizes in vector logical op"); \
 	NRvector<unsigned char> ans(m); \
 	for (i=0;i<m;i++) ans[i] = (a[i] OP b[i]); \
 	return ans; \
@@ -1619,7 +1608,7 @@ NRvector<unsigned char> NAME(const NRvector<T> &a, const NRvector<T> &b) { \
 template <class T> \
 NRmatrix<unsigned char> NAME(const NRmatrix<T> &a, const NRmatrix<T> &b) { \
 	Int i,j, n = a.nrows(), m = a.ncols(); \
-	if (n != b.nrows() || m != b.ncols()) throw("incompatible sizes in matrix logical op"); \
+	if (n != b.nrows() || m != b.ncols()) THROW("incompatible sizes in matrix logical op"); \
 	NRmatrix<unsigned char> ans(n,m); \
 	for (i=0;i<n;i++) for (j=0;j<m;j++) ans[i][j] = (a[i][j] OP b[i][j]); \
 	return ans; \
@@ -1693,7 +1682,7 @@ NewThreadedFunction(floor)
 template<class T> \
 NRvector<T> OP(const NRvector<T> &a, const NRvector<T> &b) { \
 	Int i,n=a.size(); \
-	if (b.size() != n) throw("incompatible sizes in NewTwoArgThreadedFn"); \
+	if (b.size() != n) THROW("incompatible sizes in NewTwoArgThreadedFn"); \
 	NRvector<T> ans(a); \
 	for (i=0;i<n;i++) ans[i] = OP(a[i],b[i]); \
 	return ans; \
@@ -1701,7 +1690,7 @@ NRvector<T> OP(const NRvector<T> &a, const NRvector<T> &b) { \
 template<class T> \
 NRmatrix<T> OP(const NRmatrix<T> &a, const NRmatrix<T> &b) { \
 	Int i,j,n=a.nrows(),m=a.ncols(); \
-	if (b.nrows() != n || b.ncols() != m) throw("incompatible sizes in SIGN"); \
+	if (b.nrows() != n || b.ncols() != m) THROW("incompatible sizes in SIGN"); \
 	NRmatrix<T> ans(a); \
 	for (i=0;i<n;i++) for (j=0;j<m;j++) ans[i][j] = OP(a[i][j],b[i][j]); \
 	return ans; \
@@ -1771,9 +1760,9 @@ void loadmat(NRmatrix<T> &X, char *filename, char* format=NULL) {
 	Int i,j,n=X.nrows(), m=X.ncols();
 	if (format == NULL) format = nr_in_format(T(1));
 	FILE *INP = fopen(filename,"rb");
-	if (!INP) throw("bad file in loadmat");
+	if (!INP) THROW("bad file in loadmat");
 	for (i=0;i<n;i++) for (j=0;j<m;j++)
-		if (fscanf(INP,format,&X[i][j]) != 1) throw("bad read in loadmat");
+		if (fscanf(INP,format,&X[i][j]) != 1) THROW("bad read in loadmat");
 	fclose(INP);
 }
 
@@ -1782,9 +1771,9 @@ void loadvec(NRvector<T> &y, char *filename, char* format=NULL) {
 	Int i,n=y.size();
 	if (format == NULL) format = nr_in_format(T(1));
 	FILE *INP = fopen(filename,"rb");
-	if (!INP) throw("bad file in loadvec");
+	if (!INP) THROW("bad file in loadvec");
 	for (i=0;i<n;i++)
-		if (fscanf(INP,format,&y[i]) != 1) throw("bad read in loadvec");
+		if (fscanf(INP,format,&y[i]) != 1) THROW("bad read in loadvec");
 	fclose(INP);
 }
 
@@ -1793,7 +1782,7 @@ void dumpmat(NRmatrix<T> &X, char *filename, char* format=NULL) {
 	Int i,j,n=X.nrows(), m=X.ncols();
 	if (format == NULL) format = nr_out_format(T(1));
 	FILE *OUTP = fopen(filename,"wb");
-	if (!OUTP) throw("bad file in dumpmat");
+	if (!OUTP) THROW("bad file in dumpmat");
 	for (i=0;i<n;i++) {
 		for (j=0;j<m;j++) fprintf(OUTP,format,X[i][j]);
 		fprintf(OUTP,"\n");
@@ -1806,7 +1795,7 @@ void dumpvec(NRvector<T> &y, char *filename, char* format=NULL) {
 	Int i,n=y.size();
 	if (format == NULL) format = nr_out_format(T(1));
 	FILE *OUTP = fopen(filename,"wb");
-	if (!OUTP) throw("bad file in dumpvec");
+	if (!OUTP) THROW("bad file in dumpvec");
 	for (i=0;i<n;i++) fprintf(OUTP,format,y[i]);
 	fclose(OUTP);
 }

@@ -7,7 +7,7 @@ Ran rann;
 
 VecUchar rsencode(VecUchar &message) {
 	if (message.size() != 255) {
-		throw("rsencode requires input array of size exactly 255");
+		THROW("rsencode requires input array of size exactly 255");
 	}
 	VecUchar codetext = rs.encode(message);
 	return codetext;
