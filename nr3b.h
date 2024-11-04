@@ -5,10 +5,6 @@
 // This file nr3b.h is backwards compatible with nr3.h and nr3a.h
 
 #define _CHECKBOUNDS_ 1
-#ifdef _DEBUG //NR3A
-//#define _USENRERRORCLASS_ 1 // enable for proper traceback in Win Debug, disable for proper message in Release
-#endif
-
 #define _TURNONFPES_ 1
 
 
